@@ -6,10 +6,14 @@ import {FlatList, TouchableOpacity, Image, View} from "react-native";
 import constants from "../constants";
 import * as ImagePicker from 'expo-image-picker';
 import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view";
+import {storage, auth, db} from "../../firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {doc, setDoc} from "firebase/firestore";
+import {router} from "expo-router";
 
 
 export default function AddPost() {
-    const { control, handleSubmit, formState: { errors } } = useForm({
+    const { control, handleSubmit, formState: {} } = useForm({
         defaultValues: {
             caption: ""
         }
@@ -36,12 +40,48 @@ export default function AddPost() {
     };
 
 
-    const onSubmit = data => {
-        console.log(data);
-        console.log(images.length);
+    const onSubmit = async (data) => {
+        let imageUrls = [];
+
+        if (images.length > 0) {
+            const imageUploadPromises = images.map(async (imageUri) => {
+                const response = await fetch(imageUri);
+                const blob = await response.blob();
+                const fileRef = ref(storage, `posts/${auth.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
+                await uploadBytes(fileRef, blob);
+                return getDownloadURL(fileRef);
+            });
+
+            try {
+                imageUrls = await Promise.all(imageUploadPromises);
+            } catch (error) {
+                console.error('Error uploading images:', error);
+                // Optionally continue to save the post even if images fail to upload
+            }
+        }
+
+
+        const post = {
+            caption: data.caption,
+            images: imageUrls,
+            createdAt: new Date(),
+
+        };
+
+
+        const postRef = doc(db, "posts", auth.currentUser.uid, "userPosts", `${new Date().getTime()}`);
+
+        try {
+            await setDoc(postRef, post);
+            console.log('Post added successfully');
+            router.replace("/")
+        } catch (error) {
+            console.error('Error saving post:', error);
+        }
     };
 
- return (
+
+    return (
      <KeyboardAwareScrollView
          style={{ flex: 1 }}
          resetScrollToCoords={{ x: 0, y: 0 }}
