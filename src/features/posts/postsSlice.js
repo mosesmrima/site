@@ -25,16 +25,18 @@ export const getAllPosts = createAsyncThunk("posts/getAllPosts", async (_, thunk
     }
 });
 
-export const getUserPosts = createAsyncThunk("posts/getUserPosts", async (_, thunkAPI) => {
-    try {
-        const userUid = auth.currentUser.uid;
-        const {posts} = thunkAPI.getState()
-        return posts.allPosts.filter(post => post.owner.uid === userUid)
-    } catch (err) {
-        console.error(err);
-        return thunkAPI.rejectWithValue(err);
+export const getUserPosts = createAsyncThunk(
+    "posts/getUserPosts",
+    async (uid, thunkAPI) => {
+        try {
+            const { posts } = thunkAPI.getState();
+            return posts.allPosts.filter(post => post.owner.uid === uid);
+        } catch (err) {
+            console.error(err);
+            return thunkAPI.rejectWithValue(err);
+        }
     }
-});
+);
 
 
 export const addPost = createAsyncThunk(

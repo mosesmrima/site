@@ -13,6 +13,7 @@ import {Link, router} from "expo-router";
 import {getFirebaseAuthErrorMessage} from "../firebaseAuthErrorMessageHandler";
 import {db, auth} from "../../firebaseConfig"
 import { doc, setDoc } from "firebase/firestore";
+import {capitalizeFirstLetter} from "../lib"
 
 
 export default function CreateAccountPage() {
@@ -40,9 +41,9 @@ export default function CreateAccountPage() {
                 .then(() => {
                     if (auth.currentUser) {
                         return  setDoc(doc(db, "users", auth.currentUser.uid), {
-                            firstName: data.firstName,
-                            lastName: data.lastName,
-                            email: data.email,
+                            firstName: capitalizeFirstLetter(data.firstName),
+                            lastName: capitalizeFirstLetter(data.lastName),
+                            email: data.email.toLowerCase(),
                             uid: auth.currentUser.uid
                         });
                     } else {
