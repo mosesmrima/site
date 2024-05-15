@@ -6,10 +6,10 @@ import signupImage from "../../assets/undraw_Welcoming_re_x0qo.png";
 import { Image } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useForm, Controller } from "react-hook-form";
-import { useState } from "react";
+import React, { useState } from "react";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {signUp} from "../authService";
-import {router} from "expo-router";
+import {Link, router} from "expo-router";
 import {getFirebaseAuthErrorMessage} from "../firebaseAuthErrorMessageHandler";
 import {db, auth} from "../../firebaseConfig"
 import { doc, setDoc } from "firebase/firestore";
@@ -42,7 +42,8 @@ export default function CreateAccountPage() {
                         return  setDoc(doc(db, "users", auth.currentUser.uid), {
                             firstName: data.firstName,
                             lastName: data.lastName,
-                            email: data.email
+                            email: data.email,
+                            uid: auth.currentUser.uid
                         });
                     } else {
                         throw new Error('User not authenticated');
@@ -197,6 +198,7 @@ export default function CreateAccountPage() {
                         <Button iconAfter={isLoading?Spinner:null}  color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
                             Create Account
                         </Button>
+                        <Link style={{color: "blue"}} href={"/login"}>Already have an account? Login</Link>
                     </YStack>
                 </Card>
             </YStack>

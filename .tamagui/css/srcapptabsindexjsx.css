@@ -6,9 +6,12 @@
 :root ._mih-0px{min-height:0px;}
 :root ._miw-0px{min-width:0px;}
 :root ._fs-0{flex-shrink:0;}
+:root ._w-100vw{width:100vw;}
+:root ._h-100vh{height:100vh;}
+:root ._jc-center{justify-content:center;}
+:root ._ai-center{align-items:center;}
 :root ._pt-1316330269{padding-top:var(--space-15);}
 :root ._pr-1316330269{padding-right:var(--space-15);}
 :root ._pb-1316330269{padding-bottom:var(--space-15);}
 :root ._pl-1316330269{padding-left:var(--space-15);}
 :root ._gap-1316330145{gap:var(--space-11);}
-:root ._ai-center{align-items:center;}

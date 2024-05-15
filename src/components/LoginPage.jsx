@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useForm, Controller } from "react-hook-form";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { signIn } from "../authService";
-import { router } from "expo-router";
+import { router, Link } from "expo-router";
 import { getFirebaseAuthErrorMessage } from "../firebaseAuthErrorMessageHandler";
 import { Button, Input, Card, YStack, XStack, H1, SizableText, Spinner } from "tamagui";
 import constants from "../constants";
@@ -12,25 +12,26 @@ import loginImage from "../../assets/undraw_secure_login_pdn4.png";
 
 
 export default function LoginPage() {
-    const [isLoading, setIsLoading] = useState(false);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false)
     const { control, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             email: "",
             password: ""
         }
     });
-    const [showPassword, setShowPassword] = useState(false);
 
 
     const onSubmit = data => {
-        setIsLoading(true);
+        setIsSubmitting(true);
         signIn(data.email, data.password)
             .then(userCredential => {
-                setIsLoading(false);
+                setIsSubmitting(false);
                 router.replace("/");
             })
             .catch(err => {
-                setIsLoading(false);
+                setIsSubmitting(false);
                 const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
             });
     };
@@ -109,9 +110,10 @@ export default function LoginPage() {
                         />
                         {errors.password && <SizableText style={{ color: 'red' }}>{errors.password.message}</SizableText>}
 
-                        <Button iconAfter={isLoading?Spinner:null}  color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
+                        <Button iconAfter={isSubmitting?Spinner:null}  color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
                             Login
                         </Button>
+                        <Link style={{color: "blue"}} href={"/create"}>Don't have an account? Create</Link>
                     </YStack>
                 </Card>
             </YStack>

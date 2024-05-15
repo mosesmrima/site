@@ -1,4 +1,4 @@
-import {YStack, H3, Card, TextArea, Button} from "tamagui";
+import {YStack, H3, Card, TextArea, Button, Spinner} from "tamagui";
 import { useForm, Controller } from "react-hook-form";
 import {useState} from "react";
 import { ImagePlus, Trash } from '@tamagui/lucide-icons'
@@ -6,14 +6,15 @@ import {FlatList, TouchableOpacity, Image, View} from "react-native";
 import constants from "../constants";
 import * as ImagePicker from 'expo-image-picker';
 import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view";
-import {storage, auth, db} from "../../firebaseConfig";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {doc, setDoc} from "firebase/firestore";
-import {router} from "expo-router";
+import {useDispatch, useSelector} from "react-redux";
+import {addPost} from "../features/posts/postsSlice";
 
 
 export default function AddPost() {
-    const { control, handleSubmit, formState: {} } = useForm({
+    const dispatch = useDispatch();
+    const {currentUser} = useSelector(store => store.user)
+    const {savingPost} = useSelector(store => store.posts)
+    const { control, handleSubmit, formState: {}, reset } = useForm({
         defaultValues: {
             caption: ""
         }
@@ -41,46 +42,23 @@ export default function AddPost() {
 
 
     const onSubmit = async (data) => {
-        let imageUrls = [];
-
-        if (images.length > 0) {
-            const imageUploadPromises = images.map(async (imageUri) => {
-                const response = await fetch(imageUri);
-                const blob = await response.blob();
-                const fileRef = ref(storage, `posts/${auth.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
-                await uploadBytes(fileRef, blob);
-                return getDownloadURL(fileRef);
-            });
-
-            try {
-                imageUrls = await Promise.all(imageUploadPromises);
-            } catch (error) {
-                console.error('Error uploading images:', error);
-                // Optionally continue to save the post even if images fail to upload
-            }
-        }
-
-
-        const post = {
+        reset()
+        dispatch(addPost({
             caption: data.caption,
-            images: imageUrls,
-            createdAt: new Date(),
-
-        };
-
-
-        const postRef = doc(db, "posts", auth.currentUser.uid, "userPosts", `${new Date().getTime()}`);
-
-        try {
-            await setDoc(postRef, post);
-            console.log('Post added successfully');
-            router.replace("/")
-        } catch (error) {
-            console.error('Error saving post:', error);
-        }
+            images: images,
+            currentUser: currentUser
+        }));
+        setImages([])
     };
 
-
+    if (savingPost) {
+        return (
+            <YStack width={"100vw"} heigh={"100vh"} justifyContent={"center"} alignItems={"center"}>
+                <Spinner/>
+                <H3>Posting...</H3>
+            </YStack>
+        )
+    }
     return (
      <KeyboardAwareScrollView
          style={{ flex: 1 }}
@@ -90,7 +68,7 @@ export default function AddPost() {
          enableOnAndroid={true}
      >
          <YStack alignItems="center" justifyContent="center" height={"100%"}>
-             <Card unstyled={false} maxWidth={500} width="90%" padding={20} alignItems="center">
+             <Card unstyled={false} maxWidth={600} width="90%" padding={20} alignItems="center">
                  <YStack gap={4} width={"100%"}>
                      <H3 textAlign={"center"}>New Post</H3>
                      <Controller

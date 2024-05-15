@@ -7,7 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 const initialState = {
     currentUser: {},
-    isLoading: true,
+    isLoading: false,
 }
 
 export const getUser = createAsyncThunk("user/getUser", async (_, thunkAPI) => {
@@ -27,6 +27,9 @@ const userSlice = createSlice({
     reducers: {
         logOut: (state, payload) => {
             state.currentUser = null;
+        },
+        resetLoadingState: (state) => {
+            state.isLoading = false
         }
     },
 
@@ -44,6 +47,7 @@ const userSlice = createSlice({
     },
 })
 
-export const{logOut} = userSlice.actions;
+
+export const{logOut, resetLoadingState} = userSlice.actions;
 
 export default userSlice.reducer
