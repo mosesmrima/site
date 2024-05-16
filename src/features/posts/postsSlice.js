@@ -1,6 +1,6 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import {db, auth, storage} from "../../../firebaseConfig";
-import {collectionGroup, doc, getDocs, orderBy, query, serverTimestamp, setDoc, where} from "firebase/firestore";
+import {collectionGroup, doc, getDocs, orderBy, query, serverTimestamp, setDoc} from "firebase/firestore";
 import {getDownloadURL, ref, uploadBytes} from "firebase/storage";
 import {router} from "expo-router";
 const initialState = {
@@ -8,6 +8,8 @@ const initialState = {
     allPosts: [],
     userPosts: [],
     savingPost: false,
+    otherUserPosts: [],
+    otherUserPostsLoading: true,
 }
 
 
@@ -27,6 +29,19 @@ export const getAllPosts = createAsyncThunk("posts/getAllPosts", async (_, thunk
 
 export const getUserPosts = createAsyncThunk(
     "posts/getUserPosts",
+    async (_, thunkAPI) => {
+        try {
+            const { posts } = thunkAPI.getState();
+            return posts.allPosts.filter(post => post.owner.uid === auth.currentUser.uid);
+        } catch (err) {
+            console.error(err);
+            return thunkAPI.rejectWithValue(err);
+        }
+    }
+);
+
+export const getOtherUserPosts = createAsyncThunk(
+    "posts/getOtherUserPosts",
     async (uid, thunkAPI) => {
         try {
             const { posts } = thunkAPI.getState();
@@ -75,6 +90,7 @@ export const addPost = createAsyncThunk(
         }
     }
 );
+
 const postsSlice = createSlice({
     name: "posts",
     initialState,
@@ -100,6 +116,18 @@ const postsSlice = createSlice({
         })
         builder.addCase(getUserPosts.rejected, (state, {payload}) => {
             state.postsLoading = false;
+            console.log(payload)
+        })
+
+        builder.addCase(getOtherUserPosts.pending, (state) => {
+            state.otherUserPostsLoading = true;
+        })
+        builder.addCase(getOtherUserPosts.fulfilled, (state, {payload}) => {
+            state.otherUserPostsLoading= false;
+            state.otherUserPosts = payload;
+        })
+        builder.addCase(getOtherUserPosts.rejected, (state, {payload}) => {
+            state.otherUserPostsLoading = false;
             console.log(payload)
         })
 

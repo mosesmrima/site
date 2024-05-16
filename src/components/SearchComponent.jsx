@@ -1,10 +1,14 @@
-import { Input, YStack, XStack, Button, SizableText, Popover } from "tamagui";
+import {Input, YStack, XStack, Button, SizableText, Popover, Avatar} from "tamagui";
 import React, { useState } from "react";
 import { db } from "../../firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { Controller, useForm } from "react-hook-form";
 import { capitalizeFirstLetter } from "../lib";
-
+import defaultAvatar from "../../assets/defaultAvatar.png"
+import constants from "../constants"
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import {TouchableOpacity} from "react-native";
+import {router} from "expo-router"
 export default function SearchComponent() {
     const [users, setUsers] = useState([]);
     const { control, handleSubmit, formState: { errors } } = useForm({
@@ -76,17 +80,37 @@ export default function SearchComponent() {
                             },
                         },
                     ]}
-                    maxHeight={200}
+                    maxHeight={400}
                 >
+                        <Popover.Close asChild>
+                            <FontAwesome size={18} name={"close"} color={constants.colours.primary}/>
+                        </Popover.Close>
+
+
                     <Popover.ScrollView>
-                        <YStack space="$3" padding="$3">
+                        <YStack gap="$3" padding="$3">
                             {users.length === 0 ? (
                                 <SizableText>No users found</SizableText>
                             ) : (
                                 users.map((user, index) => (
-                                    <SizableText key={index}>
-                                        {capitalizeFirstLetter(user.firstName)} {capitalizeFirstLetter(user.lastName)}
-                                    </SizableText>
+                                 <TouchableOpacity key={index} onPress={() => {
+                                     router.push({
+                                         pathname: "/usersProfile",
+                                         params: {uid: user.uid}
+                                     })
+                                 }}>
+                                     <XStack alignItems={"center"} padding={8} borderRadius={20} backgroundColor={constants.colours.secondary}>
+                                         <Avatar circular size="$3">
+                                             <Avatar.Image
+                                                 src={user.profilePic? user.profilePic: defaultAvatar}
+                                             />
+                                             <Avatar.Fallback backgroundColor="$blue10" />
+                                         </Avatar>
+                                         <SizableText>
+                                             {capitalizeFirstLetter(user.firstName)} {capitalizeFirstLetter(user.lastName)}
+                                         </SizableText>
+                                     </XStack>
+                                 </TouchableOpacity>
                                 ))
                             )}
                         </YStack>

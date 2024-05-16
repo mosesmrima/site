@@ -85,7 +85,7 @@ export default function TabLayout() {
                     name={"profile"}
                     options={{
                         title: 'My Profile',
-                        tabBarIcon: ({ color }) => (      <Avatar circular size="$2">
+                        tabBarIcon: () => (      <Avatar circular size="$2">
                             <Avatar.Image
                                 accessibilityLabel="Nate Wienert"
                                 src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?&w=100&h=100&dpr=2&q=80"
@@ -110,6 +110,14 @@ export default function TabLayout() {
                         title: 'Create Account',
                         href: null,
                         headerShown: false,
+                    }}
+                />
+
+                <Tabs.Screen
+                    name={"usersProfile"}
+                    options={{
+                        title: 'Users Profile',
+                        href: null,
                     }}
                 />
             </Tabs>

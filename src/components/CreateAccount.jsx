@@ -44,7 +44,8 @@ export default function CreateAccountPage() {
                             firstName: capitalizeFirstLetter(data.firstName),
                             lastName: capitalizeFirstLetter(data.lastName),
                             email: data.email.toLowerCase(),
-                            uid: auth.currentUser.uid
+                            uid: auth.currentUser.uid,
+                            profilePic: null
                         });
                     } else {
                         throw new Error('User not authenticated');
