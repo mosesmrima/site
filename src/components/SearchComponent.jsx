@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { db } from "../../firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { Controller, useForm } from "react-hook-form";
-import { capitalizeFirstLetter } from "../lib";
+import { capitalizeFirstLetter } from "../utils/lib";
 import defaultAvatar from "../../assets/defaultAvatar.png"
 import constants from "../constants"
 import FontAwesome from '@expo/vector-icons/FontAwesome';

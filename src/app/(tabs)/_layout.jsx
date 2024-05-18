@@ -1,40 +1,15 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {Tabs, usePathname, router} from 'expo-router';
-import {Avatar, Spinner, YStack} from "tamagui";
+import {Tabs} from 'expo-router';
+import {Avatar} from "tamagui";
 import constants from "../../constants";
-import {useDispatch, useSelector} from "react-redux";
-import {useEffect} from "react";
-import {getUser} from "../../features/user/userSlice";
-import {auth} from "../../../firebaseConfig"
+
 
 
 export default function TabLayout() {
-    const pathname = usePathname()
-    const pathsWithoutRedirect = ['/login', '/create'];
-    const dispatch = useDispatch();
-    const {currentUser, isLoading} = useSelector(store => store.user)
 
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            if (user) {
-                dispatch(getUser());
-            } else {
-                if (!pathsWithoutRedirect.includes(pathname)) {
-                    router.replace('/login');
-                }
-            }
-        });
-        return () => unsubscribe();
-    }, []);
 
-    if (isLoading) {
-        return (
-            <YStack width={"100vw"} height={"100vh"} justifyContent={"center"} alignItems={"center"}>
-                <Spinner/>
-            </YStack>
-        )
-    }
+
 
 
 
@@ -47,7 +22,7 @@ export default function TabLayout() {
                 },
                 tabBarShowLabel: false
             })}>
-                
+
                 <Tabs.Screen
                     name="index"
                     options={{

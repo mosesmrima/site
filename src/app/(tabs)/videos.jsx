@@ -1,19 +1,18 @@
-import { XStack, YStack, ScrollView, Card, SizableText } from 'tamagui'
-export default () => (
-    <ScrollView>
-        <YStack gap="$2">
+// App.js
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import VideoReel from '../../components/VideoReel';
 
-            <Card>
-                <Card.Header>
-                    <SizableText>Hello world</SizableText>
-                </Card.Header>
-            </Card>
+export default function App() {
+    return (
+        <View style={styles.container}>
+            <VideoReel />
+        </View>
+    );
+}
 
-            <YStack width={200} height={200} backgroundColor={"yellow"} />
-
-            <YStack width={200} height={200}  backgroundColor={"green"} />
-
-        </YStack>
-    </ScrollView>
-
-)
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});

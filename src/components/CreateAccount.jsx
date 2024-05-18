@@ -13,7 +13,7 @@ import {Link, router} from "expo-router";
 import {getFirebaseAuthErrorMessage} from "../firebaseAuthErrorMessageHandler";
 import {db, auth} from "../../firebaseConfig"
 import { doc, setDoc } from "firebase/firestore";
-import {capitalizeFirstLetter} from "../lib"
+import {capitalizeFirstLetter} from "../utils/lib"
 
 
 export default function CreateAccountPage() {
@@ -45,7 +45,9 @@ export default function CreateAccountPage() {
                             lastName: capitalizeFirstLetter(data.lastName),
                             email: data.email.toLowerCase(),
                             uid: auth.currentUser.uid,
-                            profilePic: null
+                            profilePic: null,
+                            followers: [],
+                            following: []
                         });
                     } else {
                         throw new Error('User not authenticated');

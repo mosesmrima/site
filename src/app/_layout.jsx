@@ -1,77 +1,71 @@
-import {Stack} from 'expo-router/stack';
+import { Stack } from 'expo-router/stack';
 import '../../tamagui-web.css';
-import { TamaguiProvider } from 'tamagui';
-import {tamaguiConfig} from "../../tamagui.config";
-import {
-    Inter_100Thin,
-    Inter_200ExtraLight,
-    Inter_300Light,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-    Inter_900Black,
-    useFonts
-} from '@expo-google-fonts/inter';
-import React, {useEffect, useState} from 'react';
+import { TamaguiProvider} from 'tamagui';
+import { tamaguiConfig } from "../../tamagui.config";
+import { store } from '../store';
+import { Provider, useDispatch } from 'react-redux';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useCallback, useEffect, useState } from "react";
 import * as SplashScreen from 'expo-splash-screen';
-import {store} from '../store';
-import {Provider} from 'react-redux';
-import {GestureHandlerRootView} from "react-native-gesture-handler";
+import { auth } from "../../firebaseConfig";
+import { getUser } from "../features/user/userSlice";
+import { router, usePathname } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
+import constants from "../constants"
 
 
-// Prevent the splash screen from auto-hiding immediately
-SplashScreen.preventAutoHideAsync();
 
-export default function App() {
-    const [fontsLoaded] = useFonts({
-        Inter_100Thin,
-        Inter_200ExtraLight,
-        Inter_300Light,
-        Inter_400Regular,
-        Inter_500Medium,
-        Inter_600SemiBold,
-        Inter_700Bold,
-        Inter_800ExtraBold,
-        Inter_900Black,
-    });
+function MainApp() {
+    const pathname = usePathname();
+    const pathsWithoutRedirect = ['/login', '/create', '/add'];
+    const dispatch = useDispatch();
 
     const [appIsReady, setAppIsReady] = useState(false);
 
-    // Manage fonts loading
     useEffect(() => {
-        if (fontsLoaded) {
-            setAppIsReady(true);
-        }
-    }, [fontsLoaded]);
-
-    // Manage splash screen
-    useEffect(() => {
-        async function hideSplashScreen() {
-            if (appIsReady) {
-                await SplashScreen.hideAsync();
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (user) {
+                dispatch(getUser());
+            } else {
+                if (!pathsWithoutRedirect.includes(pathname)) {
+                    router.replace('/login');
+                }
             }
-        }
+            setAppIsReady(true);
+        });
 
-        hideSplashScreen();
+        return () => unsubscribe();
+    }, [pathname, dispatch]);
+
+    const onLayoutRootView = useCallback(async () => {
+        if (appIsReady) {
+            await SplashScreen.hideAsync();
+        }
     }, [appIsReady]);
 
-
     if (!appIsReady) {
-        return null;
+        return (
+            <View style={{ backgroundColor: "white", flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator color={constants.colours.primary} />
+            </View>
+        );
     }
 
-
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
             <TamaguiProvider config={tamaguiConfig}>
-                <Provider store={store}>
-                    <Stack style={{ fontFamily: 'Inter_400Regular'}}>
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    </Stack>
-                </Provider>
+                <Stack>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                </Stack>
             </TamaguiProvider>
         </GestureHandlerRootView>
+    );
+}
+
+export default function App() {
+    return (
+        <Provider store={store}>
+            <MainApp />
+        </Provider>
     );
 }
