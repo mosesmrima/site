@@ -1,7 +1,7 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import {db, auth, storage} from "../../../firebaseConfig";
-import {collectionGroup, doc, getDocs, orderBy, query, serverTimestamp, setDoc} from "firebase/firestore";
-import {getDownloadURL, ref, uploadBytes} from "firebase/storage";
+import {collectionGroup, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, deleteDoc} from "firebase/firestore";
+import {getDownloadURL, ref, uploadBytes, deleteObject} from "firebase/storage";
 import {router} from "expo-router";
 const initialState = {
     postsLoading: true,
@@ -10,6 +10,7 @@ const initialState = {
     savingPost: false,
     otherUserPosts: [],
     otherUserPostsLoading: true,
+    firebaseError: null
 }
 
 
@@ -21,8 +22,7 @@ export const getAllPosts = createAsyncThunk("posts/getAllPosts", async (_, thunk
             id: doc.id,
             ...doc.data(),
         }));
-    } catch (err) {
-        console.error(err);
+    } catch (err) {ser
         return thunkAPI.rejectWithValue(err);
     }
 });
@@ -31,10 +31,11 @@ export const getUserPosts = createAsyncThunk(
     "posts/getUserPosts",
     async (_, thunkAPI) => {
         try {
+            const authInstance = await auth;
             const { posts } = thunkAPI.getState();
-            return posts.allPosts.filter(post => post.owner.uid === auth.currentUser.uid);
+            return posts.allPosts.filter(post => post.owner.uid === authInstance.currentUser.uid);
         } catch (err) {
-            console.error(err);
+
             return thunkAPI.rejectWithValue(err);
         }
     }
@@ -70,7 +71,7 @@ export const addPost = createAsyncThunk(
 
                 imageUrls = await Promise.all(imageUploadPromises);
             }
-
+            const postId = `${new Date().getTime()}`.replace(/\/+/g, '_');
             const post = {
                 caption,
                 images: imageUrls,
@@ -78,14 +79,42 @@ export const addPost = createAsyncThunk(
                 owner: {
                     ...currentUser,
                     uid: auth.currentUser.uid
-                }
+                },
+                likes: []
             };
 
-            const postRef = doc(db, "posts", auth.currentUser.uid, "userPosts", `${new Date().getTime()}`);
+            const postRef = doc(db, "posts", auth.currentUser.uid, "userPosts", postId);
             await setDoc(postRef, post);
             return post;
         } catch (error) {
             console.error('Error in addPost:', error);
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const deletePost = createAsyncThunk(
+    'posts/deletePost',
+    async ({ postId, uid }, { rejectWithValue }) => {
+        try {
+            const postRef = doc(db, "posts", uid, "userPosts", postId);
+            const postDoc = await getDoc(postRef);
+
+            if (!postDoc.exists()) {
+                throw new Error("Post not found");
+            }
+
+            const post = postDoc.data();
+            const imageDeletePromises = post.images.map(async (imageUrl) => {
+                const imageRef = ref(storage, imageUrl);
+                await deleteObject(imageRef);
+            });
+
+            await Promise.all(imageDeletePromises);
+            await deleteDoc(postRef);
+            return { postId, uid };
+        } catch (error) {
+            console.error('Error in deletePost:', error);
             return rejectWithValue(error.message);
         }
     }
@@ -101,8 +130,10 @@ const postsSlice = createSlice({
         builder.addCase(getAllPosts.fulfilled, (state, {payload}) => {
             state.postsLoading= false;
             state.allPosts = payload;
+            state.firebaseError = null
         })
-        builder.addCase(getAllPosts.rejected, (state) => {
+        builder.addCase(getAllPosts.rejected, (state, {payload}) => {
+            state.firebaseError = payload
             state.postsLoading = false;
         })
 
@@ -137,14 +168,27 @@ const postsSlice = createSlice({
             state.error = null;
         });
         builder.addCase(addPost.fulfilled, (state, action) => {
-            state.allPosts.push(action.payload);
-            state.userPosts.push(action.payload);
+            state.allPosts.unshift(action.payload);
+            state.userPosts.unshift(action.payload);
             state.savingPost = false
             router.replace("/")
         });
         builder.addCase(addPost.rejected, (state, action) => {
             state.error = action.payload;
             state.savingPost = false
+        });
+
+        builder.addCase(deletePost.pending, (state) => {
+            state.deletingPost = true;
+        });
+        builder.addCase(deletePost.fulfilled, (state, action) => {
+            state.deletingPost = false;
+            state.allPosts = state.allPosts.filter(post => post.id !== action.payload.postId);
+            state.userPosts = state.userPosts.filter(post => post.id !== action.payload.postId);
+        });
+        builder.addCase(deletePost.rejected, (state, action) => {
+            state.deletingPost = false;
+            state.error = action.payload;
         });
     }
 })

@@ -1,13 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { YStack, Avatar, XStack, SizableText, Paragraph, Input, Button, Accordion, Square, ScrollView } from "tamagui";
+import { YStack, Avatar, XStack, SizableText, Paragraph, Input, Button, Accordion, ScrollView } from "tamagui";
 import { FontAwesome } from '@expo/vector-icons';
 import constants from "../constants";
-import { Image, TouchableOpacity, StyleSheet } from "react-native";
+import { Image, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
-import { useSelector } from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import { likePost, unlikePost, checkIfLiked } from "../utils/likeUtils";
 import { addComment, getComments } from "../utils/commentUtils";
 import defaultProfile from "../../assets/defaultAvatar.png";
+import {router} from "expo-router";
+import {deletePost} from "../features/posts/postsSlice";
 
 export default function Post({ post }) {
     const carouselRef = useRef(null);
@@ -17,18 +19,25 @@ export default function Post({ post }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const currentUser = useSelector(store => store.user.currentUser);
+    const dispatch = useDispatch()
 
     useEffect(() => {
         const fetchLikeStatus = async () => {
-            if (currentUser) {
+            if (currentUser && post.id) {
                 const liked = await checkIfLiked(currentUser.uid, post.owner.uid, post.id);
                 setIsLiked(liked);
+            } else {
+                console.warn("Skipping fetchLikeStatus: currentUser or post.id is undefined or null");
             }
         };
 
         const fetchComments = async () => {
-            const commentsData = await getComments(post.owner.uid, post.id);
-            setComments(commentsData);
+            if (post.id) {
+                const commentsData = await getComments(post.owner.uid, post.id);
+                setComments(commentsData);
+            } else {
+                console.warn("Skipping fetchComments: post.id is undefined or null");
+            }
         };
 
         fetchLikeStatus();
@@ -36,18 +45,20 @@ export default function Post({ post }) {
     }, [currentUser, post.owner.uid, post.id]);
 
     const handleLike = async () => {
-        setIsLiked(!isLiked);
-        if (isLiked) {
-            setLikesCount(likesCount - 1);
-            await unlikePost(currentUser.uid, post.owner.uid, post.id);
-        } else {
-            setLikesCount(likesCount + 1);
-            await likePost(currentUser.uid, post.owner.uid, post.id);
+        if (currentUser && post.id) {
+            setIsLiked(!isLiked);
+            if (isLiked) {
+                setLikesCount(likesCount - 1);
+                await unlikePost(currentUser.uid, post.owner.uid, post.id);
+            } else {
+                setLikesCount(likesCount + 1);
+                await likePost(currentUser.uid, post.owner.uid, post.id);
+            }
         }
     };
 
     const handleAddComment = async () => {
-        if (newComment.trim() !== "") {
+        if (newComment.trim() !== "" && post.id) {
             await addComment(post.owner.uid, post.id, newComment);
             setNewComment("");
             const commentsData = await getComments(post.owner.uid, post.id);
@@ -69,19 +80,31 @@ export default function Post({ post }) {
 
     return (
         <YStack gap={2} borderRadius={20} backgroundColor={constants.colours.secondary} maxWidth={350} padding={15}>
-            <XStack justifyContent={"space-between"} alignItems={"center"}>
-                <XStack gap={"$2"} alignItems="center">
-                    <Avatar circular size="$3">
-                        <Avatar.Image
-                            accessibilityLabel="User Avatar"
-                            src={post.owner.profilePic ? post.owner.profilePic : defaultProfile}
-                        />
-                        <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
-                    </Avatar>
-                    <SizableText fontWeight={"900"}>{`${post.owner.firstName} ${post.owner.lastName}`}</SizableText>
+                <XStack justifyContent={"space-between"} alignItems={"center"}>
+                    <TouchableOpacity onPress={() => {
+                        router.push({
+                            pathname: `/users/${post.owner.uid}`,
+                            params: { uid: post.owner.uid }
+                        });
+                    }}>
+                    <XStack gap={2} alignItems="center">
+                        <Avatar circular size={"$3"}>
+                            <Avatar.Image
+                                accessibilityLabel="User Avatar"
+                                src={post.owner.profilePic ? post.owner.profilePic : defaultProfile}
+                            />
+                            <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
+                        </Avatar>
+                        <Text fontWeight={"bold"}>{`${post.owner.firstName} ${post.owner.lastName}`}</Text>
+                    </XStack>
+                    </TouchableOpacity>
+                    {
+                       ( currentUser.uid === post.owner.uid) && <TouchableOpacity onPress={() => dispatch(deletePost({ postId: post.id, uid: post.owner.uid }))}>
+                            <FontAwesome name="trash" size={15} color="red" />
+                        </TouchableOpacity>
+                    }
+
                 </XStack>
-                <FontAwesome name="ellipsis-h" size={20} color="black" />
-            </XStack>
             <Paragraph>
                 {post.caption}
             </Paragraph>
@@ -117,13 +140,13 @@ export default function Post({ post }) {
                     )}
                 </>
             ) : <YStack width={400} />}
-            <XStack width={"30%"} justifyContent={"space-between"} gap={"$4"} alignItems={"center"}>
+            <XStack width={"30%"} justifyContent={"space-between"} gap={4} alignItems={"center"}>
                 <TouchableOpacity onPress={handleLike}>
                     <FontAwesome name={isLiked ? "heart" : "heart-o"} size={18} color={constants.colours.primary} />
                 </TouchableOpacity>
-                <FontAwesome name="share-alt" size={18} color={constants.colours.primary} />
+                {/*<FontAwesome name="share-alt" size={18} color={constants.colours.primary} />*/}
             </XStack>
-            <SizableText fontWeight={"700"}>{likesCount} likes</SizableText>
+            <SizableText>{likesCount} likes</SizableText>
 
             {/* Comments Accordion */}
             <Accordion overflow="hidden" width="100%" type="multiple">
@@ -133,17 +156,17 @@ export default function Post({ post }) {
                             <>
                                 <SizableText color={constants.colours.primary}>View all comments</SizableText>
                                 <XStack animation="quick" rotate={open ? '180deg' : '0deg'}>
-                                    <FontAwesome name={"chevron-down"} size="$1" />
+                                    <FontAwesome name={"chevron-down"} size={2} />
                                 </XStack>
                             </>
                         )}
                     </Accordion.Trigger>
                     <Accordion.HeightAnimator animation="medium">
                         <Accordion.Content backgroundColor={"transparent"} animation="medium" exitStyle={{ opacity: 0 }}>
-                            <ScrollView  width={"400px"} maxHeight={200}>
-                                <YStack gap={"$2"}>
+                            <ScrollView width={400} maxHeight={200}>
+                                <YStack gap={2}>
                                     {comments.map((comment, index) => (
-                                        <YStack key={index} gap={"$1"} alignItems="center">
+                                        <YStack key={index} gap={1} alignItems="center">
                                             <XStack>
                                                 <Avatar circular size="$1">
                                                     <Avatar.Image
@@ -152,7 +175,7 @@ export default function Post({ post }) {
                                                     />
                                                     <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                                                 </Avatar>
-                                                <SizableText fontWeight={"700"}>{comment.userName}</SizableText>
+                                                <SizableText fontWeight={"bold"}>{comment.userName}</SizableText>
                                             </XStack>
                                             <Paragraph>{comment.text}</Paragraph>
                                         </YStack>
@@ -165,7 +188,7 @@ export default function Post({ post }) {
             </Accordion>
 
             {/* Add Comment */}
-            <XStack gap={"$2"} alignItems="center">
+            <XStack gap={2} alignItems="center">
                 <Input
                     value={newComment}
                     onChangeText={setNewComment}

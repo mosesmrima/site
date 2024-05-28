@@ -41,7 +41,7 @@ export default function PasswordReset() {
             <YStack alignItems="center" justifyContent="center" height="100vh" width="100%">
                 <Card unstyled={true} maxWidth={500} width="90%" padding={20} alignItems="center">
                     <YStack alignItems="center" width="100%" gap={4}>
-                        <H1 size="$4">Password Reset</H1>
+                        <H1>Password Reset</H1>
                         <Image source={forgotImage} style={{ width: 300, height: 200 }} />
                         <Controller
                             control={control}

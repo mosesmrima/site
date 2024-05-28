@@ -1,14 +1,15 @@
-import {Input, YStack, XStack, Button, SizableText, Popover, Avatar} from "tamagui";
+import { Input, YStack, XStack, Button, SizableText, Popover, Avatar } from "tamagui";
 import React, { useState } from "react";
 import { db } from "../../firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { Controller, useForm } from "react-hook-form";
 import { capitalizeFirstLetter } from "../utils/lib";
-import defaultAvatar from "../../assets/defaultAvatar.png"
-import constants from "../constants"
+import defaultAvatar from "../../assets/defaultAvatar.png";
+import constants from "../constants";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import {TouchableOpacity} from "react-native";
-import {router} from "expo-router"
+import { TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+
 export default function SearchComponent() {
     const [users, setUsers] = useState([]);
     const { control, handleSubmit, formState: { errors } } = useForm({
@@ -57,7 +58,6 @@ export default function SearchComponent() {
                                     onBlur={onBlur}
                                     onChangeText={onChange}
                                     value={value}
-                                    style={errors.search ? { borderColor: 'red' } : {}}
                                 />
                             )}
                             name="search"
@@ -82,35 +82,35 @@ export default function SearchComponent() {
                     ]}
                     maxHeight={400}
                 >
-                        <Popover.Close asChild>
-                            <FontAwesome size={18} name={"close"} color={constants.colours.primary}/>
-                        </Popover.Close>
-
+                    <Popover.Close asChild>
+                        <TouchableOpacity onPress={() => setPopoverOpen(false)}>
+                            <FontAwesome size={18} name="close" color={constants.colours.primary} />
+                        </TouchableOpacity>
+                    </Popover.Close>
 
                     <Popover.ScrollView>
-                        <YStack gap="$3" padding="$3">
+                        <YStack>
                             {users.length === 0 ? (
                                 <SizableText>No users found</SizableText>
                             ) : (
                                 users.map((user, index) => (
-                                 <TouchableOpacity key={index} onPress={() => {
-                                     router.push({
-                                         pathname: "/usersProfile",
-                                         params: {uid: user.uid}
-                                     })
-                                 }}>
-                                     <XStack alignItems={"center"} padding={8} borderRadius={20} backgroundColor={constants.colours.secondary}>
-                                         <Avatar circular size="$3">
-                                             <Avatar.Image
-                                                 src={user.profilePic? user.profilePic: defaultAvatar}
-                                             />
-                                             <Avatar.Fallback backgroundColor="$blue10" />
-                                         </Avatar>
-                                         <SizableText>
-                                             {capitalizeFirstLetter(user.firstName)} {capitalizeFirstLetter(user.lastName)}
-                                         </SizableText>
-                                     </XStack>
-                                 </TouchableOpacity>
+                                    <TouchableOpacity key={index} onPress={() => {
+                                        router.push({
+                                            pathname: `/users/${user.uid}`,
+                                            params: { uid: user.uid }
+                                        });
+                                    }}>
+                                        <XStack alignItems="center" padding={8} borderRadius={20} backgroundColor={constants.colours.secondary}>
+                                            <Avatar circular size="$3">
+                                                <Avatar.Image
+                                                    source={user.profilePic ? user.profilePic : defaultAvatar}
+                                                />
+                                            </Avatar>
+                                            <SizableText>
+                                                {capitalizeFirstLetter(user.firstName)} {capitalizeFirstLetter(user.lastName)}
+                                            </SizableText>
+                                        </XStack>
+                                    </TouchableOpacity>
                                 ))
                             )}
                         </YStack>

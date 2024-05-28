@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState } from 'react';
 import { Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useForm, Controller } from "react-hook-form";
@@ -6,15 +6,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { signIn } from "../authService";
 import { router, Link } from "expo-router";
 import { getFirebaseAuthErrorMessage } from "../firebaseAuthErrorMessageHandler";
-import { Button, Input, Card, YStack, XStack, H1, SizableText, Spinner } from "tamagui";
+import { Button, Input, Card, YStack, XStack, Spinner, Text } from "tamagui";
 import constants from "../constants";
 import loginImage from "../../assets/undraw_secure_login_pdn4.png";
 
-
 export default function LoginPage() {
-
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPassword, setShowPassword] = useState(false)
+    const [showPassword, setShowPassword] = useState(false);
+    const [loginError, setLoginError] = useState(null);
     const { control, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             email: "",
@@ -22,18 +21,17 @@ export default function LoginPage() {
         }
     });
 
-
-    const onSubmit = data => {
+    const onSubmit = async data => {
         setIsSubmitting(true);
-        signIn(data.email, data.password)
-            .then(userCredential => {
-                setIsSubmitting(false);
-                router.replace("/");
-            })
-            .catch(err => {
-                setIsSubmitting(false);
-                const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
-            });
+        try {
+            await signIn(data.email, data.password);
+            router.replace("/");
+        } catch (err) {
+            const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
+            setLoginError(friendlyMessage)
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -43,11 +41,8 @@ export default function LoginPage() {
     const renderPasswordToggleIcon = () => (
         <Button
             onPress={togglePasswordVisibility}
-            size="$2"
-            icon={<MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={24} color="grey" />}
-            borderRadius="$0"
+            icon={<MaterialCommunityIcons size={20} name={showPassword ? 'eye-off' : 'eye'} color="grey" />}
             backgroundColor="transparent"
-            borderWidth="0"
         />
     );
 
@@ -59,11 +54,11 @@ export default function LoginPage() {
             scrollEnabled={false}
             enableOnAndroid={true}
         >
-            <YStack alignItems="center" justifyContent="center" height="100vh" width="100%">
+            <YStack alignItems="center" justifyContent="center" height="100%" width="100%">
                 <Card unstyled={true} maxWidth={500} width="90%" padding={20} alignItems="center">
-                    <YStack alignItems={"center"} width={"100%"} gap={4}>
-                        <H1 size="$4">Login</H1>
-                        <Image source={loginImage} style={{width: 300, height: 200}}/>
+                    <YStack alignItems="center" width="100%" gap={4}>
+                        <Text>Login</Text>
+                        <Image source={loginImage} style={{ width: 300, height: 200 }} />
                         <Controller
                             control={control}
                             rules={{
@@ -85,13 +80,11 @@ export default function LoginPage() {
                             )}
                             name="email"
                         />
-                        {errors.email && <SizableText style={{ color: 'red' }}>{errors.email.message}</SizableText>}
+                        {errors.email && <Text style={{ color: 'red' }}>{errors.email.message}</Text>}
 
                         <Controller
                             control={control}
-                            rules={{
-                                required: 'Password is required'
-                            }}
+                            rules={{ required: 'Password is required' }}
                             render={({ field: { onChange, onBlur, value } }) => (
                                 <XStack width="80%" alignItems="center">
                                     <Input
@@ -108,12 +101,13 @@ export default function LoginPage() {
                             )}
                             name="password"
                         />
-                        {errors.password && <SizableText style={{ color: 'red' }}>{errors.password.message}</SizableText>}
+                        {errors.password && <Text style={{ color: 'red' }}>{errors.password.message}</Text>}
 
-                        <Button iconAfter={isSubmitting?Spinner:null}  color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
+                        <Button iconAfter={isSubmitting ? <Spinner /> : null} color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
                             Login
                         </Button>
-                        <Link style={{color: "blue"}} href={"/create"}>Don't have an account? Create</Link>
+                        {loginError && <Text style={{color: "red"}}>{loginError}</Text>}
+                        <Link style={{ color: "blue" }} href={"/create"}>Don't have an account? Create</Link>
                     </YStack>
                 </Card>
             </YStack>

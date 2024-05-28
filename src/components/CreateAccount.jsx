@@ -1,20 +1,18 @@
-// noinspection JSValidateTypes
-
-import {YStack, SizableText, Button, Input, Card, XStack, H1, Spinner} from "tamagui";
+import { YStack, SizableText, Button, Input, Card, XStack, Spinner, Text } from "tamagui";
 import constants from "../constants";
-import signupImage from "../../assets/undraw_Welcoming_re_x0qo.png";
 import { Image } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useForm, Controller } from "react-hook-form";
 import React, { useState } from "react";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import {signUp} from "../authService";
-import {Link, router} from "expo-router";
-import {getFirebaseAuthErrorMessage} from "../firebaseAuthErrorMessageHandler";
-import {db, auth} from "../../firebaseConfig"
+import { signUp } from "../authService";
+import { Link, router } from "expo-router";
+import { getFirebaseAuthErrorMessage } from "../firebaseAuthErrorMessageHandler";
+import { db, auth, storage } from "../../firebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
-import {capitalizeFirstLetter} from "../utils/lib"
-
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { capitalizeFirstLetter } from "../utils/lib";
+import * as ImagePicker from 'expo-image-picker';
 
 export default function CreateAccountPage() {
     const { control, handleSubmit, formState: { errors } } = useForm({
@@ -23,57 +21,69 @@ export default function CreateAccountPage() {
             lastName: "",
             email: "",
             password: "",
-            passwordConfirm: ""
+            passwordConfirm: "",
+            profilePic: null,
+            phone: "",
+            location: "",
+            about: ""
         }
     });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [passwordMissmatch, setPasswordMissmatch] = useState(false);
+    const [passwordMismatch, setPasswordMismatch] = useState(false);
 
-
-    const onSubmit = data => {
+    const onSubmit = async data => {
         if (data.password !== data.passwordConfirm) {
-            setPasswordMissmatch(true);
+            setPasswordMismatch(true);
         } else {
-            setPasswordMissmatch(false);
+            setPasswordMismatch(false);
             setIsLoading(true);
-            signUp(data.email, data.password, data.firstName, data.lastName)
-                .then(() => {
-                    if (auth.currentUser) {
-                        return  setDoc(doc(db, "users", auth.currentUser.uid), {
-                            firstName: capitalizeFirstLetter(data.firstName),
-                            lastName: capitalizeFirstLetter(data.lastName),
-                            email: data.email.toLowerCase(),
-                            uid: auth.currentUser.uid,
-                            profilePic: null,
-                            followers: [],
-                            following: []
-                        });
-                    } else {
-                        throw new Error('User not authenticated');
-                    }
-                })
-                .then(() => {
-                    setIsLoading(false);
-                    router.replace("/");
-                })
-                .catch((err) => {
-                    setIsLoading(false);
-                    console.log("Error:", err);
-                    if (err.code) {
-                        const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
-                        console.log(friendlyMessage);
-                    }
-                });
+            try {
+                await signUp(data.email, data.password, data.firstName, data.lastName);
 
+                let profilePicUrl = null;
+                if (data.profilePic) {
+                    profilePicUrl = await uploadImageAsync(data.profilePic);
+                }
+
+                if (auth.currentUser) {
+                    await setDoc(doc(db, "users", auth.currentUser.uid), {
+                        firstName: capitalizeFirstLetter(data.firstName),
+                        lastName: capitalizeFirstLetter(data.lastName),
+                        email: data.email.toLowerCase(),
+                        uid: auth.currentUser.uid,
+                        profilePic: profilePicUrl,
+                        phone: data.phone,
+                        location: data.location,
+                        about: data.about,
+                        followers: [],
+                        following: []
+                    });
+                }
+                setIsLoading(false);
+                router.replace("/");
+            } catch (err) {
+                setIsLoading(false);
+                console.log("Error:", err);
+                if (err.code) {
+                    const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
+                    console.log(friendlyMessage);
+                }
+            }
         }
-    }
+    };
+
+    const uploadImageAsync = async (imageUri) => {
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        const fileRef = ref(storage, `profilePics/${auth.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
+        await uploadBytes(fileRef, blob);
+        return getDownloadURL(fileRef);
+    };
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
-
-
 
     const renderPasswordToggleIcon = (show) => (
         <Button
@@ -86,19 +96,32 @@ export default function CreateAccountPage() {
         />
     );
 
+    const pickImage = async (onChange) => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            onChange(result.assets[0].uri);
+        }
+    };
+
     return (
         <KeyboardAwareScrollView
             style={{ flex: 1 }}
             resetScrollToCoords={{ x: 0, y: 0 }}
             contentContainerStyle={{ flexGrow: 1 }}
-            scrollEnabled={false}
+            scrollEnabled={true}
             enableOnAndroid={true}
         >
-            <YStack alignItems="center" justifyContent="center" height="100vh" width="100%">
+            <YStack alignItems="center" justifyContent="center" height="100%" width="100%">
                 <Card unstyled={true} maxWidth={500} width="90%" padding={20} alignItems="center">
-                    <YStack alignItems={"center"} width={"100%"}  gap={4}>
-                        <H1 size="$4">Create Account</H1>
-                        <Image source={signupImage} style={{width: 300, height: 200}}/>
+                    <YStack alignItems="center" width="100%" gap={4}>
+                        <Text>Create Account</Text>
+
 
                         <Controller
                             control={control}
@@ -198,11 +221,76 @@ export default function CreateAccountPage() {
                         />
                         {errors.passwordConfirm && <SizableText style={{ color: 'red' }}>{errors.passwordConfirm.message}</SizableText>}
 
-                        {passwordMissmatch && <SizableText color={"red"}>Passwords don't match</SizableText>}
-                        <Button iconAfter={isLoading?Spinner:null}  color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
+                        {passwordMismatch && <SizableText style={{ color: 'red' }}>Passwords don't match</SizableText>}
+
+                        <Controller
+                            control={control}
+                            rules={{ required: 'Profile picture is required' }}
+                            render={({ field: { onChange, value } }) => (
+                                <>
+                                    <Button onPress={() => pickImage(onChange)}>Choose Profile Picture</Button>
+                                    {value && <Image source={{ uri: value }} style={{ width: 100, height: 100 }} />}
+                                </>
+                            )}
+                            name="profilePic"
+                        />
+                        {errors.profilePic && <SizableText style={{ color: 'red' }}>{errors.profilePic.message}</SizableText>}
+
+                        <Controller
+                            control={control}
+                            rules={{ required: 'Phone number is required' }}
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <Input
+                                    placeholder="Phone"
+                                    width="80%"
+                                    onBlur={onBlur}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    style={errors.phone ? { borderColor: 'red' } : {}}
+                                />
+                            )}
+                            name="phone"
+                        />
+                        {errors.phone && <SizableText style={{ color: 'red' }}>{errors.phone.message}</SizableText>}
+
+                        <Controller
+                            control={control}
+                            rules={{ required: 'Location is required' }}
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <Input
+                                    placeholder="Location"
+                                    width="80%"
+                                    onBlur={onBlur}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    style={errors.location ? { borderColor: 'red' } : {}}
+                                />
+                            )}
+                            name="location"
+                        />
+                        {errors.location && <SizableText style={{ color: 'red' }}>{errors.location.message}</SizableText>}
+
+                        <Controller
+                            control={control}
+                            rules={{ required: 'Description is required' }}
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <Input
+                                    placeholder="Say something about yourself/what you do"
+                                    width="80%"
+                                    onBlur={onBlur}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    style={errors.about ? { borderColor: 'red' } : {}}
+                                />
+                            )}
+                            name="about"
+                        />
+                        {errors.about && <SizableText style={{ color: 'red' }}>{errors.about.message}</SizableText>}
+
+                        <Button iconAfter={isLoading ? <Spinner /> : null} color={constants.colours.secondary} backgroundColor={constants.colours.primary} onPress={handleSubmit(onSubmit)} width="50%">
                             Create Account
                         </Button>
-                        <Link style={{color: "blue"}} href={"/login"}>Already have an account? Login</Link>
+                        <Link style={{ color: "blue" }} href={"/login"}>Already have an account? Login</Link>
                     </YStack>
                 </Card>
             </YStack>

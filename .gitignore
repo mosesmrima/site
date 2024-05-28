@@ -412,3 +412,7 @@ fabric.properties
 
 
 # End of https://www.toptal.com/developers/gitignore/api/webstorm,reactnative,android,linux,firebase
+.vercel
+
+# Local Netlify folder
+.netlify

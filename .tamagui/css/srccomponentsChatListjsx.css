@@ -1,5 +1,5 @@
 :root ._dsp-flex{display:flex;}
-:root ._fd-column{flex-direction:column;}
+:root ._fd-row{flex-direction:row;}
 :root ._fb-auto{flex-basis:auto;}
 :root ._bxs-border-box{box-sizing:border-box;}
 :root ._pos-relative{position:relative;}
@@ -7,6 +7,4 @@
 :root ._miw-0px{min-width:0px;}
 :root ._fs-0{flex-shrink:0;}
 :root ._ai-center{align-items:center;}
-:root ._jc-center{justify-content:center;}
-:root ._h-100vh{height:100vh;}
-:root ._w-10037{width:100%;}
+:root ._gap-4px{gap:4px;}

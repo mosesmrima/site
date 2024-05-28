@@ -1,9 +1,6 @@
-import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
-import {db, auth} from "../../../firebaseConfig";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { db, auth } from "../../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
-
-
-
 
 const initialState = {
     currentUser: {},
@@ -14,64 +11,67 @@ const initialState = {
 
 export const getUser = createAsyncThunk("user/getUser", async (_, thunkAPI) => {
     try {
-        const docRef = doc(db, "users", auth.currentUser.uid)
-        const docSnap = await getDoc(docRef);
-        return docSnap.data()
-    } catch (err){
-        console.log(err)
-        thunkAPI.rejectWithValue("cant fetch user")
+        const authInstance = await auth; // Wait for auth to be initialized
+        const user = authInstance.currentUser;
+        if (user) {
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+            return docSnap.data();
+        } else {
+            return thunkAPI.rejectWithValue("No user is logged in");
+        }
+    } catch (err) {
+        return thunkAPI.rejectWithValue("Can't fetch user");
     }
-})
+});
 
 export const getOtherUser = createAsyncThunk("user/getOtherUser", async (uid, thunkAPI) => {
     try {
-        const docRef = doc(db, "users", uid)
+        const docRef = doc(db, "users", uid);
         const docSnap = await getDoc(docRef);
-        return docSnap.data()
-    } catch (err){
-        console.log(err)
-        thunkAPI.rejectWithValue("cant fetch user")
+        return docSnap.data();
+    } catch (err) {
+        return thunkAPI.rejectWithValue("Can't fetch user");
     }
-})
+});
 
 const userSlice = createSlice({
     name: "user",
     initialState,
     reducers: {
-        logOut: (state, payload) => {
+        logOut: (state) => {
             state.currentUser = null;
         },
         resetLoadingState: (state) => {
-            state.isLoading = false
+            state.isLoading = false;
         }
     },
 
     extraReducers: (builder) => {
-        builder.addCase(getUser.pending, (state) => {
-            state.isLoading = true;
-        })
-        builder.addCase(getUser.fulfilled, (state, {payload}) => {
-            state.isLoading = false;
-            state.currentUser = payload;
-        })
-        builder.addCase(getUser.rejected, (state, {payload}) => {
-            state.isLoading = false;
-        })
-
-        builder.addCase(getOtherUser.pending, (state) => {
-            state.otherUserIsLoading = true;
-        })
-        builder.addCase(getOtherUser.fulfilled, (state, {payload}) => {
-            state.otherUserIsLoading = false;
-            state.otherUser = payload;
-        })
-        builder.addCase(getOtherUser.rejected, (state) => {
-            state.otherUserIsLoading = false;
-        })
+        builder
+            .addCase(getUser.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(getUser.fulfilled, (state, { payload }) => {
+                state.isLoading = false;
+                state.currentUser = payload;
+            })
+            .addCase(getUser.rejected, (state, { payload }) => {
+                state.isLoading = false;
+            })
+            .addCase(getOtherUser.pending, (state) => {
+                state.otherUserIsLoading = true;
+            })
+            .addCase(getOtherUser.fulfilled, (state, { payload }) => {
+                state.otherUserIsLoading = false;
+                state.otherUser = payload;
+            })
+            .addCase(getOtherUser.rejected, (state) => {
+                state.otherUserIsLoading = false;
+            });
     },
-})
+});
 
+export const { logOut, resetLoadingState } = userSlice.actions;
 
-export const{logOut, resetLoadingState} = userSlice.actions;
-
-export default userSlice.reducer
+export default userSlice.reducer;

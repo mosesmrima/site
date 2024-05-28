@@ -20,7 +20,7 @@ module.exports = withTamagui(config, {
 
     components: ['tamagui'],
 
-    config: './tamagui.config.ts',
+    config: './tamagui.config.js',
 
     outputCSS: './tamagui-web.css',
 
