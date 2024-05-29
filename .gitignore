@@ -11,7 +11,7 @@ local.properties
 
 # Log/OS Files
 *.log
-
+.tamagui
 # Android Studio generated files and folders
 captures/
 .externalNativeBuild/
