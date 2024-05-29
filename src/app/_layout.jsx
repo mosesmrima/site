@@ -6,15 +6,12 @@ import { tamaguiConfig } from "../../tamagui.config";
 import { store } from '../store';
 import { Provider, useDispatch } from 'react-redux';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { auth } from "../../firebaseConfig";
 import { getUser } from "../features/user/userSlice";
 import { router, usePathname } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import constants from "../constants";
-
-SplashScreen.preventAutoHideAsync();
 
 function MainApp() {
     const pathname = usePathname();
@@ -23,12 +20,10 @@ function MainApp() {
 
     const [appIsReady, setAppIsReady] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [authInitialized, setAuthInitialized] = useState(false);
 
     useEffect(() => {
         const initializeAuth = async () => {
-            const authInstance = await auth; // Wait for auth to be initialized
-            setAuthInitialized(true);
+            const authInstance = await auth;
             const unsubscribe = authInstance.onAuthStateChanged(async user => {
                 if (user) {
                     try {
@@ -48,16 +43,15 @@ function MainApp() {
         };
 
         initializeAuth();
-    }, [isMounted]);
+    }, [dispatch, pathname, isMounted]);
 
-    const onLayoutRootView = useCallback(async () => {
+    const onLayoutRootView = useCallback(() => {
         if (appIsReady) {
-            await SplashScreen.hideAsync();
-            setIsMounted(true);  // Set mounted state after hiding the splash screen
+            setIsMounted(true);  // Set mounted state after app is ready
         }
     }, [appIsReady]);
 
-    if (!appIsReady || !authInitialized) {
+    if (!appIsReady) {
         return (
             <View style={{ backgroundColor: "white", flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator color={constants.colours.primary} />
@@ -66,13 +60,13 @@ function MainApp() {
     }
 
     return (
-
-            <TamaguiProvider config={tamaguiConfig} onLayout={onLayoutRootView}>
+        <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+            <TamaguiProvider config={tamaguiConfig}>
                 <Stack>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 </Stack>
             </TamaguiProvider>
-
+        </GestureHandlerRootView>
     );
 }
 
@@ -96,24 +90,15 @@ export default function App() {
         loadFontsAndPrepareApp();
     }, []);
 
-    useEffect(() => {
-        const prepareSplashScreen = async () => {
-            if (fontsLoaded) {
-                await SplashScreen.hideAsync();
-            }
-        };
-        prepareSplashScreen();
-    }, [fontsLoaded]);
-
     if (!fontsLoaded) {
-        return null;
+        return null; // Return null to prevent rendering anything before fonts are loaded
     }
 
     return (
-      <GestureHandlerRootView style={{ flex: 1 }} >
-        <Provider store={store}>
-            <MainApp />
-        </Provider>
-       </GestureHandlerRootView>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <Provider store={store}>
+                <MainApp />
+            </Provider>
+        </GestureHandlerRootView>
     );
 }

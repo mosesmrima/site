@@ -90,9 +90,7 @@ export default function CreateAccountPage() {
             onPress={show ? togglePasswordVisibility : togglePasswordVisibility}
             size="$2"
             icon={<MaterialCommunityIcons name={show ? 'eye-off' : 'eye'} size={24} color="grey" />}
-            borderRadius="$0"
             backgroundColor="transparent"
-            borderWidth="0"
         />
     );
 

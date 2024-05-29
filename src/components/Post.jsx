@@ -1,17 +1,18 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { YStack, Avatar, XStack, SizableText, Paragraph, Input, Button, Accordion, ScrollView } from "tamagui";
+import React, { useRef, useState, useEffect, memo, useCallback } from 'react';
+import { YStack, Avatar, XStack, SizableText, Paragraph, Input, Button, Accordion, ScrollView, Text } from "tamagui";
 import { FontAwesome } from '@expo/vector-icons';
 import constants from "../constants";
-import { Image, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { TouchableOpacity, StyleSheet } from "react-native";
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
-import {useDispatch, useSelector} from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { likePost, unlikePost, checkIfLiked } from "../utils/likeUtils";
 import { addComment, getComments } from "../utils/commentUtils";
 import defaultProfile from "../../assets/defaultAvatar.png";
-import {router} from "expo-router";
-import {deletePost} from "../features/posts/postsSlice";
+import { router } from "expo-router";
+import { deletePost } from "../features/posts/postsSlice";
+import { Image } from 'expo-image';
 
-export default function Post({ post }) {
+const Post = ({ post }) => {
     const carouselRef = useRef(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLiked, setIsLiked] = useState(false);
@@ -19,7 +20,7 @@ export default function Post({ post }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const currentUser = useSelector(store => store.user.currentUser);
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const fetchLikeStatus = async () => {
@@ -42,9 +43,10 @@ export default function Post({ post }) {
 
         fetchLikeStatus();
         fetchComments();
-    }, [currentUser, post.owner.uid, post.id]);
 
-    const handleLike = async () => {
+    }, []);
+
+    const handleLike = useCallback(async () => {
         if (currentUser && post.id) {
             setIsLiked(!isLiked);
             if (isLiked) {
@@ -55,38 +57,33 @@ export default function Post({ post }) {
                 await likePost(currentUser.uid, post.owner.uid, post.id);
             }
         }
-    };
+    }, [currentUser, isLiked, likesCount, post.id, post.owner.uid]);
 
-    const handleAddComment = async () => {
+    const handleAddComment = useCallback(async () => {
         if (newComment.trim() !== "" && post.id) {
             await addComment(post.owner.uid, post.id, newComment);
             setNewComment("");
             const commentsData = await getComments(post.owner.uid, post.id);
             setComments(commentsData);
         }
-    };
+    }, [newComment, post.id, post.owner.uid]);
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         const nextIndex = currentIndex + 1 >= post.images.length ? 0 : currentIndex + 1;
         carouselRef.current?.scrollToIndex({ index: nextIndex });
         setCurrentIndex(nextIndex);
-    };
+    }, [currentIndex, post.images.length]);
 
-    const handlePrev = () => {
+    const handlePrev = useCallback(() => {
         const prevIndex = currentIndex - 1 < 0 ? post.images.length - 1 : currentIndex - 1;
         carouselRef.current?.scrollToIndex({ index: prevIndex });
         setCurrentIndex(prevIndex);
-    };
+    }, [currentIndex, post.images.length]);
 
     return (
-        <YStack gap={2} borderRadius={20} backgroundColor={constants.colours.secondary} maxWidth={350} padding={15}>
-                <XStack justifyContent={"space-between"} alignItems={"center"}>
-                    <TouchableOpacity onPress={() => {
-                        router.push({
-                            pathname: `/users/${post.owner.uid}`,
-                            params: { uid: post.owner.uid }
-                        });
-                    }}>
+        <YStack gap={2} borderRadius={10} backgroundColor={constants.colours.secondary} maxWidth={350} padding={10}>
+            <XStack justifyContent={"space-between"} alignItems={"center"}>
+                <TouchableOpacity onPress={() => router.push(`/users/${post.owner.uid}`)}>
                     <XStack gap={2} alignItems="center">
                         <Avatar circular size={"$3"}>
                             <Avatar.Image
@@ -97,36 +94,30 @@ export default function Post({ post }) {
                         </Avatar>
                         <Text fontWeight={"bold"}>{`${post.owner.firstName} ${post.owner.lastName}`}</Text>
                     </XStack>
+                </TouchableOpacity>
+                {currentUser.uid === post.owner.uid && (
+                    <TouchableOpacity onPress={() => dispatch(deletePost({ postId: post.id, uid: post.owner.uid }))}>
+                        <FontAwesome name="trash" size={15} color="red" />
                     </TouchableOpacity>
-                    {
-                       ( currentUser.uid === post.owner.uid) && <TouchableOpacity onPress={() => dispatch(deletePost({ postId: post.id, uid: post.owner.uid }))}>
-                            <FontAwesome name="trash" size={15} color="red" />
-                        </TouchableOpacity>
-                    }
-
-                </XStack>
-            <Paragraph>
-                {post.caption}
-            </Paragraph>
-            {post.images.length > 0 ? (
+                )}
+            </XStack>
+            <Paragraph>{post.caption}</Paragraph>
+            {post.images.length > 0 && (
                 <>
                     <SwiperFlatList
                         ref={carouselRef}
-                        autoplay
-                        autoplayDelay={5}
-                        autoplayLoop
                         index={currentIndex}
+                        horizontal={true}
                         onChangeIndex={({ index }) => setCurrentIndex(index)}
-                        showPagination
                         data={post.images}
+                        style={{ maxHeight: 200, maxWidth: 300}}
                         renderItem={({ item }) => (
                             <Image
                                 source={{ uri: item }}
                                 style={styles.image}
-                                resizeMode="cover"
+                                contentFit="cover"
                             />
                         )}
-                        paginationStyleItem={styles.paginationStyleItem}
                     />
                     {post.images.length > 1 && (
                         <XStack width={"100%"} justifyContent={"space-between"} alignItems={"center"}>
@@ -139,16 +130,13 @@ export default function Post({ post }) {
                         </XStack>
                     )}
                 </>
-            ) : <YStack width={400} />}
+            )}
             <XStack width={"30%"} justifyContent={"space-between"} gap={4} alignItems={"center"}>
                 <TouchableOpacity onPress={handleLike}>
                     <FontAwesome name={isLiked ? "heart" : "heart-o"} size={18} color={constants.colours.primary} />
                 </TouchableOpacity>
-                {/*<FontAwesome name="share-alt" size={18} color={constants.colours.primary} />*/}
             </XStack>
             <SizableText>{likesCount} likes</SizableText>
-
-            {/* Comments Accordion */}
             <Accordion overflow="hidden" width="100%" type="multiple">
                 <Accordion.Item value="comments">
                     <Accordion.Trigger focusStyle={{ backgroundColor: "transparent" }} borderColor={"transparent"} backgroundColor={"transparent"} style={false} flexDirection="row" justifyContent="space-between">
@@ -163,11 +151,11 @@ export default function Post({ post }) {
                     </Accordion.Trigger>
                     <Accordion.HeightAnimator animation="medium">
                         <Accordion.Content backgroundColor={"transparent"} animation="medium" exitStyle={{ opacity: 0 }}>
-                            <ScrollView width={400} maxHeight={200}>
+                            <ScrollView width={300} maxHeight={200}>
                                 <YStack gap={2}>
                                     {comments.map((comment, index) => (
                                         <YStack key={index} gap={1} alignItems="center">
-                                            <XStack>
+                                            <XStack width={300}>
                                                 <Avatar circular size="$1">
                                                     <Avatar.Image
                                                         accessibilityLabel="Commenter Avatar"
@@ -175,9 +163,9 @@ export default function Post({ post }) {
                                                     />
                                                     <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                                                 </Avatar>
-                                                <SizableText fontWeight={"bold"}>{comment.userName}</SizableText>
+                                                <SizableText width={"100%"} fontWeight={"bold"}>{comment.userName}</SizableText>
                                             </XStack>
-                                            <Paragraph>{comment.text}</Paragraph>
+                                            <Paragraph width={"100%"}>{comment.text}</Paragraph>
                                         </YStack>
                                     ))}
                                 </YStack>
@@ -186,14 +174,11 @@ export default function Post({ post }) {
                     </Accordion.HeightAnimator>
                 </Accordion.Item>
             </Accordion>
-
-            {/* Add Comment */}
             <XStack gap={2} alignItems="center">
                 <Input
                     value={newComment}
                     onChangeText={setNewComment}
                     placeholder="Add a comment..."
-                    width="80%"
                 />
                 <Button onPress={handleAddComment}>Post</Button>
             </XStack>
@@ -203,12 +188,10 @@ export default function Post({ post }) {
 
 const styles = StyleSheet.create({
     image: {
-        width: 350,
+        width: 280,
         height: 200,
-    },
-    paginationStyleItem: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-    },
+
+    }
 });
+
+export default memo(Post);
