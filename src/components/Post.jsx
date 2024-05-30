@@ -81,7 +81,7 @@ const Post = ({ post }) => {
     }, [currentIndex, post.images.length]);
 
     return (
-        <YStack gap={2} borderRadius={10} backgroundColor={constants.colours.secondary} maxWidth={350} padding={10}>
+        <YStack gap={2} borderRadius={10} backgroundColor={constants.colours.secondary} width={270} padding={10}>
             <XStack justifyContent={"space-between"} alignItems={"center"}>
                 <TouchableOpacity onPress={() => router.push(`/users/${post.owner.uid}`)}>
                     <XStack gap={2} alignItems="center">

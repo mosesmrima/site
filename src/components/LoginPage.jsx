@@ -9,11 +9,15 @@ import { getFirebaseAuthErrorMessage } from "../firebaseAuthErrorMessageHandler"
 import { Button, Input, Card, YStack, XStack, Spinner, Text } from "tamagui";
 import constants from "../constants";
 import loginImage from "../../assets/undraw_secure_login_pdn4.png";
+import {auth} from "../../firebaseConfig"
+import {getUser} from "../features/user/userSlice";
+import {useDispatch} from "react-redux";
 
 export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [loginError, setLoginError] = useState(null);
+    const dispatch = useDispatch();
     const { control, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             email: "",
@@ -25,7 +29,18 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             await signIn(data.email, data.password);
-            router.replace("/");
+            let authInstance = await auth;
+            authInstance.onAuthStateChanged(async user => {
+                if (user) {
+                    try {
+                        await dispatch(getUser());
+                        router.replace("/");
+                    } catch (error) {
+                        console.error('Error fetching user:', error);
+                    }
+                }
+            });
+
         } catch (err) {
             const friendlyMessage = getFirebaseAuthErrorMessage(err.code);
             setLoginError(friendlyMessage)

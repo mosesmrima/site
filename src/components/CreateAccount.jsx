@@ -13,8 +13,11 @@ import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { capitalizeFirstLetter } from "../utils/lib";
 import * as ImagePicker from 'expo-image-picker';
+import {getUser} from "../features/user/userSlice";
+import {useDispatch} from "react-redux";
 
 export default function CreateAccountPage() {
+    const dispatch = useDispatch();
     const { control, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             firstName: "",
@@ -41,27 +44,34 @@ export default function CreateAccountPage() {
             try {
                 await signUp(data.email, data.password, data.firstName, data.lastName);
 
-                let profilePicUrl = null;
-                if (data.profilePic) {
-                    profilePicUrl = await uploadImageAsync(data.profilePic);
-                }
-
-                if (auth.currentUser) {
-                    await setDoc(doc(db, "users", auth.currentUser.uid), {
-                        firstName: capitalizeFirstLetter(data.firstName),
-                        lastName: capitalizeFirstLetter(data.lastName),
-                        email: data.email.toLowerCase(),
-                        uid: auth.currentUser.uid,
-                        profilePic: profilePicUrl,
-                        phone: data.phone,
-                        location: data.location,
-                        about: data.about,
-                        followers: [],
-                        following: []
-                    });
-                }
-                setIsLoading(false);
-                router.replace("/");
+                let authInstance = await auth;
+                authInstance.onAuthStateChanged(async user => {
+                    if (user) {
+                        try {
+                            let profilePicUrl = null;
+                            if (data.profilePic) {
+                                profilePicUrl = await uploadImageAsync(data.profilePic);
+                            }
+                            await setDoc(doc(db, "users", authInstance.currentUser.uid), {
+                                firstName: capitalizeFirstLetter(data.firstName),
+                                lastName: capitalizeFirstLetter(data.lastName),
+                                email: data.email.toLowerCase(),
+                                uid: authInstance.currentUser.uid,
+                                profilePic: profilePicUrl,
+                                phone: data.phone,
+                                location: data.location,
+                                about: data.about,
+                                followers: [],
+                                following: []
+                            });
+                            await dispatch(getUser());
+                            setIsLoading(false);
+                            router.replace("/");
+                        } catch (error) {
+                            console.error('Error fetching user:', error);
+                        }
+                    }
+                });
             } catch (err) {
                 setIsLoading(false);
                 console.log("Error:", err);
@@ -76,7 +86,8 @@ export default function CreateAccountPage() {
     const uploadImageAsync = async (imageUri) => {
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        const fileRef = ref(storage, `profilePics/${auth.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
+        const authInstance = await auth;
+        const fileRef = ref(storage, `profilePics/${authInstance.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
         await uploadBytes(fileRef, blob);
         return getDownloadURL(fileRef);
     };
