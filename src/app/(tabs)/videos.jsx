@@ -7,7 +7,7 @@ import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { storage, db } from "../../../firebaseConfig";
 import { useSelector } from "react-redux";
-import { Input, Button } from "tamagui";
+import {Input, Button, YStack} from "tamagui";
 
 const { width, height } = Dimensions.get('window');
 
@@ -141,7 +141,13 @@ const VideoCarousel = () => {
     return (
         <View style={styles.container}>
             {videoData.length === 0 ? (
-                <Text style={styles.noVideosText}>No videos available, please upload</Text>
+                <YStack flex={1} gap={4} justifyContent={"center"} alignItems={"center"}>
+                    <Text style={styles.noVideosText}>No videos available, please upload</Text>
+                    <TouchableOpacity onPress={pickVideo}>
+                        <Ionicons name="cloud-upload-outline" size={20} color="blue" />
+                    </TouchableOpacity>
+                </YStack>
+
             ) : (
                 <FlatList
                     data={videoData}

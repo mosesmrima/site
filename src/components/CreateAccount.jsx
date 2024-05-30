@@ -66,7 +66,7 @@ export default function CreateAccountPage() {
                             });
                             await dispatch(getUser());
                             setIsLoading(false);
-                            router.replace("/");
+                            router.replace("/videos");
                         } catch (error) {
                             console.error('Error fetching user:', error);
                         }

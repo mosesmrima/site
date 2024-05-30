@@ -34,7 +34,7 @@ export default function LoginPage() {
                 if (user) {
                     try {
                         await dispatch(getUser());
-                        router.replace("/");
+                        router.replace("/videos");
                     } catch (error) {
                         console.error('Error fetching user:', error);
                     }
