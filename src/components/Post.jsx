@@ -88,7 +88,7 @@ const Post = ({ post }) => {
                         <Avatar circular size={"$3"}>
                             <Avatar.Image
                                 accessibilityLabel="User Avatar"
-                                src={post.owner.profilePic ? post.owner.profilePic : defaultProfile}
+                                source={post.owner.profilePic ? post.owner.profilePic : defaultProfile}
                             />
                             <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                         </Avatar>
@@ -159,7 +159,7 @@ const Post = ({ post }) => {
                                                 <Avatar circular size="$1">
                                                     <Avatar.Image
                                                         accessibilityLabel="Commenter Avatar"
-                                                        src={comment.profilePic || defaultProfile}
+                                                        source={comment.profilePic || defaultProfile}
                                                     />
                                                     <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                                                 </Avatar>
