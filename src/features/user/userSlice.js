@@ -38,15 +38,6 @@ export const getOtherUser = createAsyncThunk("user/getOtherUser", async (uid, th
 const userSlice = createSlice({
     name: "user",
     initialState,
-    reducers: {
-        logOut: (state) => {
-            state.currentUser = null;
-        },
-        resetLoadingState: (state) => {
-            state.isLoading = false;
-        }
-    },
-
     extraReducers: (builder) => {
         builder
             .addCase(getUser.pending, (state) => {
@@ -68,10 +59,9 @@ const userSlice = createSlice({
             })
             .addCase(getOtherUser.rejected, (state) => {
                 state.otherUserIsLoading = false;
-            });
+            })
     },
 });
 
-export const { logOut, resetLoadingState } = userSlice.actions;
 
 export default userSlice.reducer;

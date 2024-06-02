@@ -1,15 +1,16 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {Tabs} from 'expo-router';
+import {router, Tabs} from 'expo-router';
 import {Avatar, Text, View} from "tamagui";
 import constants from "../../constants";
 import {useSelector} from "react-redux";
 import defaultAvatar from "../../../assets/defaultAvatar.png"
-
+import {TouchableOpacity} from "react-native";
+import {signOutUser} from "../../authService"
 
 export default function TabLayout() {
-    const { currentUser } = useSelector(store => store.user)
-    const {firebaseError} = useSelector(store => store.posts)
+    const { currentUser } = useSelector(store => store.user);
+    const {firebaseError} = useSelector(store => store.posts);
 
     if (firebaseError) {
         return <View flex={1} justifyContent={"center"} alignItems={"center"}>
@@ -17,6 +18,11 @@ export default function TabLayout() {
         </View>
     }
 
+    const handleLogout = async () => {
+        await signOutUser();
+        router.replace("/login")
+    };
+    
     if (currentUser) {
         return (
             <Tabs sceneContainerStyle={{backgroundColor: "white"}}   screenOptions={({ route }) => ({
@@ -87,6 +93,11 @@ export default function TabLayout() {
                             />
                             <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                         </Avatar>),
+                        headerRight: () => (
+                            <TouchableOpacity onPress={handleLogout} style={{ marginRight: 10, padding: 10 }}>
+                                <FontAwesome name='sign-out' size={24} color='black' />
+                            </TouchableOpacity>
+                        ),
                     }}
                 />
 

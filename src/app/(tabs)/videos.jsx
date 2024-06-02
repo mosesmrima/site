@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Dimensions, FlatList, StyleSheet, Pressable, TouchableOpacity, Text, Modal, ActivityIndicator } from 'react-native';
+import { View, Dimensions, FlatList, StyleSheet, Pressable, TouchableOpacity, Text, Modal, ActivityIndicator, AppState } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -7,7 +7,8 @@ import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { storage, db } from "../../../firebaseConfig";
 import { useSelector } from "react-redux";
-import {Input, Button, YStack} from "tamagui";
+import { Input, Button, YStack } from "tamagui";
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -65,6 +66,37 @@ const VideoCarousel = () => {
             setVideoData(videos);
         };
         fetchVideos();
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            // Stop all videos when the screen is not focused
+            return () => {
+                videoRefs.current.forEach((ref) => {
+                    if (ref) {
+                        ref.pauseAsync().catch((error) => console.log('Pause error:', error));
+                    }
+                });
+            };
+        }, [])
+    );
+
+    useEffect(() => {
+        const handleAppStateChange = (nextAppState) => {
+            if (nextAppState === 'background' || nextAppState === 'inactive') {
+                videoRefs.current.forEach((ref) => {
+                    if (ref) {
+                        ref.pauseAsync().catch((error) => console.log('Pause error:', error));
+                    }
+                });
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        return () => {
+            subscription.remove();
+        };
     }, []);
 
     const pickVideo = async () => {
@@ -125,6 +157,8 @@ const VideoCarousel = () => {
                         isLooping
                         resizeMode={ResizeMode.COVER}
                         useNativeControls={false}
+                        onLoadStart={() => console.log('Loading video...')}
+                        onLoad={() => console.log('Video loaded')}
                     />
                     <View style={styles.overlay}>
                         <Text style={styles.ownerText}>{item.owner.firstName} {item.owner.lastName}</Text>
