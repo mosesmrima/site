@@ -74,10 +74,11 @@ export default function UserProfile({ uid }) {
                                 <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
                             </Avatar>
                         </YStack>
-                        <YStack gap="$2">
-                            <StarRatingDisplay starSize={20} color={constants.colours.primary} rating={4.5} />
-                            <Button color={constants.colours.secondary} backgroundColor={constants.colours.primary} borderRadius={40} size={"$2"}>Reviews</Button>
-                        </YStack>
+                        {/*<YStack gap="$2">*/}
+                        {/*    <StarRatingDisplay starSize={20} color={constants.colours.primary} rating={4.5} />*/}
+                        {/*    <Button color={constants.colours.secondary} backgroundColor={constants.colours.primary} borderRadius={40} size={"$2"}>Reviews</Button>*/}
+                        {/*</YStack>*/}
+
                     </XStack>
                     <YStack alignItems={"center"} alignSelf={"center"}>
                         <SizableText>

@@ -58,13 +58,14 @@ export const getOtherUserPosts = createAsyncThunk(
 export const addPost = createAsyncThunk(
     'posts/addPost',
     async ({ caption, images, currentUser }, { rejectWithValue }) => {
+        const authInstance = await auth;
         try {
             let imageUrls = [];
             if (images.length > 0) {
                 const imageUploadPromises = images.map(async (imageUri) => {
                     const response = await fetch(imageUri);
                     const blob = await response.blob();
-                    const fileRef = ref(storage, `posts/${auth.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
+                    const fileRef = ref(storage, `posts/${authInstance.currentUser.uid}/${new Date().getTime()}-${imageUri.split('/').pop()}`);
                     await uploadBytes(fileRef, blob);
                     return getDownloadURL(fileRef);
                 });
@@ -78,12 +79,11 @@ export const addPost = createAsyncThunk(
                 timeStamp: serverTimestamp(),
                 owner: {
                     ...currentUser,
-                    uid: auth.currentUser.uid
+                    uid: authInstance.currentUser.uid
                 },
                 likes: []
             };
-
-            const postRef = doc(db, "posts", auth.currentUser.uid, "userPosts", postId);
+            const postRef = doc(db, "posts", authInstance.currentUser.uid, "userPosts", postId);
             await setDoc(postRef, post);
             return post;
         } catch (error) {

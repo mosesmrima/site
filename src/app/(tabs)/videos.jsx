@@ -8,13 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { storage, db } from "../../../firebaseConfig";
 import { useSelector } from "react-redux";
 import { Input, Button, YStack } from "tamagui";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 const VideoCarousel = () => {
     const [currentViewableItemIndex, setCurrentViewableItemIndex] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [videoData, setVideoData] = useState([]);
     const [caption, setCaption] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
@@ -22,6 +21,7 @@ const VideoCarousel = () => {
     const [isUploading, setIsUploading] = useState(false);
     const videoRefs = useRef([]);
     const { currentUser } = useSelector(store => store.user);
+    const isFocused = useIsFocused();
 
     const viewabilityConfig = { viewAreaCoveragePercentThreshold: 80 };
 
@@ -38,26 +38,25 @@ const VideoCarousel = () => {
 
     const playOrPauseVideo = useCallback((index) => {
         if (videoRefs.current[index]) {
-            if (isPlaying) {
-                videoRefs.current[index].pauseAsync().catch((error) => console.log('Pause error:', error));
-            } else {
+            if (isFocused) {
                 videoRefs.current[index].playAsync().catch((error) => console.log('Play error:', error));
+            } else {
+                videoRefs.current[index].pauseAsync().catch((error) => console.log('Pause error:', error));
             }
-            setIsPlaying(!isPlaying);
         }
-    }, [isPlaying]);
+    }, [isFocused]);
 
     useEffect(() => {
         videoRefs.current.forEach((ref, i) => {
             if (ref) {
-                if (i === currentViewableItemIndex) {
+                if (i === currentViewableItemIndex && isFocused) {
                     ref.playAsync().catch((error) => console.log('Play error:', error));
                 } else {
                     ref.pauseAsync().catch((error) => console.log('Pause error:', error));
                 }
             }
         });
-    }, [currentViewableItemIndex]);
+    }, [currentViewableItemIndex, isFocused]);
 
     useEffect(() => {
         const fetchVideos = async () => {
@@ -70,7 +69,12 @@ const VideoCarousel = () => {
 
     useFocusEffect(
         useCallback(() => {
-            // Stop all videos when the screen is not focused
+            videoRefs.current.forEach((ref) => {
+                if (ref) {
+                    ref.pauseAsync().catch((error) => console.log('Pause error:', error));
+                }
+            });
+
             return () => {
                 videoRefs.current.forEach((ref) => {
                     if (ref) {
@@ -250,18 +254,15 @@ const styles = StyleSheet.create({
         color: 'white',
     },
     noVideosText: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 16,
+        textAlign: "center"
     },
     uploadButton: {
         position: 'absolute',
-        bottom: 80,
-        right: 20,
-        backgroundColor: 'blue',
+        bottom: 10,
+        right: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         padding: 10,
-        borderRadius: 25,
-        zIndex: 1,
+        borderRadius: 50,
     },
     modalView: {
         margin: 20,
@@ -279,12 +280,11 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     input: {
-        width: 200,
-        padding: 10,
-        borderColor: '#ccc',
         borderWidth: 1,
-        marginBottom: 20,
-        borderRadius: 5,
+        borderColor: '#ccc',
+        padding: 10,
+        marginBottom: 10,
+        width: '100%',
     },
 });
 

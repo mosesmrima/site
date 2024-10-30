@@ -1,17 +1,30 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {router, Tabs} from 'expo-router';
+import {Redirect, router, Tabs} from 'expo-router';
 import {Avatar, Text, View} from "tamagui";
 import constants from "../../constants";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import defaultAvatar from "../../../assets/defaultAvatar.png"
 import {TouchableOpacity} from "react-native";
 import {signOutUser} from "../../authService"
+import React, {useEffect} from "react";
+import {getUser} from "../../features/user/userSlice";
 
 export default function TabLayout() {
+    const dispatch = useDispatch()
     const { currentUser } = useSelector(store => store.user);
     const {firebaseError} = useSelector(store => store.posts);
-
+    console.log(currentUser)
+    useEffect(() => {
+        const getUserDets = async () => {
+                try {
+                    await dispatch(getUser());
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                }
+        }
+        getUserDets();
+    }, []);
     if (firebaseError) {
         return <View flex={1} justifyContent={"center"} alignItems={"center"}>
             <Text>Firebase free tier exceeded try again after 24hrs </Text>
@@ -129,7 +142,7 @@ export default function TabLayout() {
         );
     } else {
         return <View style={{flex: 1, justifyContent: "center", alignItems: "center"} }>
-            <Text>Loading Please wait...</Text>
+            <Redirect href="/videos" />;
         </View>
     }
 }
